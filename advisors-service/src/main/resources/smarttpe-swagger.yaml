@@ -1,0 +1,126 @@
+openapi: 3.0.0
+servers:
+  - url: 'https://api.inno-sphere.net/smart/'
+  - url: 'http://localhost:9999/'
+  - url: 'http://localhost:9998/'
+info:
+  version: '1.0'
+  title: Smart TPE
+paths:
+  /heartbeat:
+    get:
+      tags:
+        - heartbeat
+      summary: Check service is alive
+      operationId: getHeartbeat
+      responses:
+        '200':
+          description: success
+      x-contentType: text/plain
+      x-accepts: text/plain
+  /advisors:
+    get:
+      tags:
+        - advisors
+      operationId: getAdvisors
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Advisor'
+  /accounts:
+    post:
+#      security:
+#        - Token: []
+      tags:
+        - Accounts
+      summary: create an account
+      operationId: postAccount
+      responses:
+        default:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/Account'
+                  error:
+                    $ref: '#/components/schemas/Error'
+      x-contentType: application/json
+      x-accepts: application/json
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                invoice:
+                  $ref: '#/components/schemas/Account'
+                invoice_hash:
+                  type: string
+    get:
+      security:
+        - Token: []
+      tags:
+        - Invoices
+      summary: Retrieve a pending invoice by name. This resource requires a Seller Session-Token
+      operationId: getInvoice
+      parameters:
+        - name: name
+          in: query
+          required: true
+          description: The name of the invoice
+          schema:
+            type: string
+      x-contentType: application/json
+      responses:
+        default:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+components:
+  schemas:
+    Advisor:
+      type: object
+      properties:
+        _id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        specialties:
+          description: required (array of ) speciality
+          type: array
+          items:
+            $ref: '#/components/schemas/Specialty'
+    Specialty:
+      type: object
+      properties:
+        name:
+          description: IBAN of the account
+          type: string
+    Error:
+      type: object
+      properties: 
+        message:
+          type: string
+        code:
+          type: string
+    Account:
+      type: object
+      properties:
+        account_number:
+          description: IBAN of the account
+          type: string
+        balance:
+          description: current balance
+          type: number
+

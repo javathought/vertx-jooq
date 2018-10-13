@@ -1,0 +1,23 @@
+= API de
+
+:icons: font
+
+=== lancement du serveur
+
+Utiliser les options de lancement suivantes :
+----
+java -Dlogback.configurationFile=./logback.xml  -Dvertx.logger-delegate-factory-class
+-name=io.vertx.core.logging.SLF4JLogDelegateFactory -jar smarttpe-api-<version>-fat.jar -conf conf/config.json
+----
+
+run under docker
+----
+docker network create rocker
+docker run --net rocker --name other-mongo -d mongo
+docker run -e DATABASE_URL='mongodb://other-mongo/advisor' -e DB_NAME=advisor -t -i -p 9999:9999 --name advisor --network rocker sample/advisor
+----
+
+[NOTE]
+====
+utiliser l'option -Dvertx.disableDnsResolver=true sous windows pour éviter certains mesages d'erreur
+====
