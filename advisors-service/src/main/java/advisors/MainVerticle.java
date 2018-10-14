@@ -1,22 +1,20 @@
 package advisors;
 
 import advisors.handlers.GetAdvisorsHandler;
+import advisors.handlers.GetHeartbeatHandler;
 import advisors.handlers.PostAccountSqlHandler;
-import io.vertx.core.*;
+import advisors.security.handlers.TokenSecurityHandler;
+import io.vertx.core.Context;
+import io.vertx.core.Future;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient;
-import io.vertx.reactivex.ext.asyncsql.MySQLClient;
-
-//import io.vertx.ext.asyncsql.MySQLClient;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.core.http.HttpServer;
-import io.vertx.reactivex.ext.mongo.MongoClient;
+import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient;
+import io.vertx.reactivex.ext.asyncsql.MySQLClient;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
-import advisors.handlers.GetHeartbeatHandler;
-import advisors.handlers.PostAccountHandler;
-import advisors.security.handlers.TokenSecurityHandler;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -35,10 +33,14 @@ public class MainVerticle extends AbstractVerticle {
     // Configuration keys
     private static final String HTTP_PORT = "http.port";
     private static final String HTTP_SERVER = "http.server";
-    private static final String CORS = "cors";
+    private static final String CRED_FIELD = "password";
+    private static final String USERNAME = "username";
+    private static final String DATABASE = "datadb_name";
+    private static final String DB_URL = "db_url";
     private HttpServer server;
     private AsyncSQLClient mySQLClient;
     private DSLContext jooqContext;
+    private Connection conn;
 
     @Override
     public void init(Vertx vertx, Context context) {
@@ -50,28 +52,28 @@ public class MainVerticle extends AbstractVerticle {
 
         JsonObject mySQLClientConfig = new JsonObject()
                 .put("host", "localhost")
-                .put("database", "bank")
-                .put("username", "bank_adm")
-                .put("password", "password");
+                .put("database", config().getString(DATABASE))
+                .put(USERNAME, config().getString(USERNAME))
+                .put(CRED_FIELD, config().getString(CRED_FIELD));
         mySQLClient = MySQLClient.createShared(this.vertx, mySQLClientConfig);
 
 
-        String userName = "bank_adm";
-        String password = "password";
-        String url = "jdbc:mysql://localhost:3306/bank";
+        String userName = config().getString(USERNAME);
+        String password = config().getString(CRED_FIELD);
+        String url = config().getString(DB_URL);
 
         // Connection is the only JDBC resource that we need
         // PreparedStatement and ResultSet are handled by jOOQ, internally
-        try (Connection conn = DriverManager.getConnection(url, userName, password)) {
+        try {
+            conn = DriverManager.getConnection(url, userName, password);
+            conn.setAutoCommit(false);
             jooqContext = DSL.using(conn, SQLDialect.MYSQL);
         }
 
         // For the sake of this tutorial, let's keep exception handling simple
         catch (SQLException e) {
-            e.printStackTrace();
+            LOG.error("Unable to init connection", e);
         }
-
-
 
     }
 
@@ -80,14 +82,11 @@ public class MainVerticle extends AbstractVerticle {
 
         int port = config().getInteger(HTTP_PORT, DEFAULT_PORT);
         String hostListen = config().getString(HTTP_SERVER, DEFAULT_HOST);
-        boolean cors = config().getBoolean(CORS, false);
 
         OpenAPI3RouterFactory.create(this.vertx, "/smarttpe-swagger.yaml", openAPI3RouterFactoryAsyncResult -> {
             if (openAPI3RouterFactoryAsyncResult.succeeded()) {
                 try {
                     OpenAPI3RouterFactory routerFactory = openAPI3RouterFactoryAsyncResult.result();
-
-                    MongoClient mongoClient = MongoClient.createShared(vertx, config());
 
                     // Enable automatic response when ValidationException is thrown
                     routerFactory.enableValidationFailureHandler(true);
@@ -102,8 +101,6 @@ public class MainVerticle extends AbstractVerticle {
 
                     // Generate the router
                     Router router = routerFactory.getRouter();
-
-//                    router.route().order(1).handler(CookieHandler.create());
 
                     router.get("/swagger.yaml").handler(c -> c.response().rxSendFile(getClass().getResource("/smarttpe-swagger.yaml").getFile()).subscribe());
 
@@ -123,6 +120,11 @@ public class MainVerticle extends AbstractVerticle {
 
     @Override
     public void stop() {
+        try {
+            this.conn.close();
+        } catch (SQLException e) {
+            LOG.error("exception on connection close", e);
+        }
         this.server.close();
     }
 

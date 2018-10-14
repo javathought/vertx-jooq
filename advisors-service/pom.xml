@@ -31,12 +31,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.github.jklingsporn</groupId>
-            <artifactId>vertx-jooq-rx-async</artifactId>
-            <version>3.0.2</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
             <version>3.10.5</version>
@@ -45,6 +39,11 @@
             <groupId>io.github.jklingsporn</groupId>
             <artifactId>vertx-jooq-rx-async</artifactId>
             <version>3.0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>6.0.5</version>
         </dependency>
 
         <dependency>
@@ -249,6 +248,11 @@
                         <artifactId>vertx-jooq-generate</artifactId>
                         <version>3.0.2</version>
                     </dependency>
+                    <dependency>
+                        <groupId>io.github.javathought</groupId>
+                        <artifactId>converters</artifactId>
+                        <version>1.0-SNAPSHOT</version>
+                    </dependency>
                 </dependencies>
 
                 <!-- Specify the plugin configuration.
@@ -264,7 +268,8 @@
 
                     <!-- Generator parameters -->
                     <generator>
-                        <name>io.github.jklingsporn.vertx.jooq.generate.VertxGenerator</name>
+                        <name>generators.CustomVertxGenerator</name>
+                        <!--<name>io.github.jklingsporn.vertx.jooq.generate.VertxGenerator</name>-->
                         <!-- use 'io.github.jklingsporn.vertx.jooq.generate.rx.VertxGuiceRXGenerator' to enable Guice DI -->
                         <database>
                             <name>org.jooq.util.mysql.MySQLDatabase</name>
