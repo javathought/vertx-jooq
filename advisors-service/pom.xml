@@ -268,8 +268,8 @@
 
                     <!-- Generator parameters -->
                     <generator>
-                        <name>generators.CustomVertxGenerator</name>
-                        <!--<name>io.github.jklingsporn.vertx.jooq.generate.VertxGenerator</name>-->
+                        <!--<name>generators.CustomVertxGenerator</name>-->
+                        <name>io.github.jklingsporn.vertx.jooq.generate.VertxGenerator</name>
                         <!-- use 'io.github.jklingsporn.vertx.jooq.generate.rx.VertxGuiceRXGenerator' to enable Guice DI -->
                         <database>
                             <name>org.jooq.util.mysql.MySQLDatabase</name>
