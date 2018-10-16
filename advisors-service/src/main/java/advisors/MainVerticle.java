@@ -15,11 +15,15 @@ import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient;
 import io.vertx.reactivex.ext.asyncsql.MySQLClient;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
+import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.jooq.impl.DefaultConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -55,12 +59,14 @@ public class MainVerticle extends AbstractVerticle {
                 .put("database", config().getString(DATABASE))
                 .put(USERNAME, config().getString(USERNAME))
                 .put(CRED_FIELD, config().getString(CRED_FIELD));
-        mySQLClient = MySQLClient.createShared(this.vertx, mySQLClientConfig);
+        mySQLClient = MySQLClient.createNonShared(this.vertx, mySQLClientConfig);
+
 
 
         String userName = config().getString(USERNAME);
         String password = config().getString(CRED_FIELD);
         String url = config().getString(DB_URL);
+
 
         // Connection is the only JDBC resource that we need
         // PreparedStatement and ResultSet are handled by jOOQ, internally
