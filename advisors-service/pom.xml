@@ -28,6 +28,15 @@
         </repository>
     </repositories>
 
+    <profiles>
+    <profile>
+        <!-- build renamed to store passwords in global maven settings.xml -->
+        <id>advisors</id>
+        <activation>
+            <activeByDefault>true</activeByDefault>
+        </activation>
+    </profile>
+    </profiles>
 
     <dependencies>
         <dependency>
@@ -165,6 +174,20 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.flywaydb</groupId>
+                    <artifactId>flyway-maven-plugin</artifactId>
+                    <version>4.0.2</version>
+                    <configuration>
+                        <url>${db.url}</url>
+                        <user>${db.user}</user>
+                        <password>${db.password}</password>
+                        <!--<serverId>${db.serverid}</serverId>-->
+                        <locations><location>filesystem:${basedir}/src/main/resources/db/migration</location></locations>
+                        <baselineVersion>0</baselineVersion>
+                        <baselineOnMigrate>true</baselineOnMigrate>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.1</version>
                     <configuration>
@@ -246,7 +269,7 @@
                     <dependency>
                         <groupId>mysql</groupId>
                         <artifactId>mysql-connector-java</artifactId>
-                        <version>5.1.37</version>
+                        <version>5.1.47</version>
                     </dependency>
                     <dependency>
                         <groupId>io.github.jklingsporn</groupId>
