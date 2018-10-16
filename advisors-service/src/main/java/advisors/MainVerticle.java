@@ -36,7 +36,7 @@ public class MainVerticle extends AbstractVerticle {
     private static final String HTTP_SERVER = "http.server";
     private static final String CRED_FIELD = "password";
     private static final String USERNAME = "username";
-    private static final String DATABASE = "datadb_name";
+    private static final String DATABASE = "db_name";
     private static final String DB_URL = "db_url";
     private HttpServer server;
     private AsyncSQLClient mySQLClient;
@@ -55,8 +55,11 @@ public class MainVerticle extends AbstractVerticle {
                 .put("host", "localhost")
                 .put("database", config().getString(DATABASE))
                 .put(USERNAME, config().getString(USERNAME))
-                .put(CRED_FIELD, config().getString(CRED_FIELD));
+                .put(CRED_FIELD, config().getString(CRED_FIELD))
+        .put("autocommit", "false")
+        ;
         mySQLClient = MySQLClient.createNonShared(this.vertx, withSQLClientConfig);
+        
 
 
 
