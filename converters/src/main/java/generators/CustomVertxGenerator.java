@@ -11,7 +11,7 @@ public class CustomVertxGenerator extends io.github.jklingsporn.vertx.jooq.gener
     @Override
     protected boolean handleCustomTypeFromJson(TypedElementDefinition<?> column, String setter, String columnType, String javaMemberName, JavaWriter out) {
         if(isType(columnType, BigDecimal.class)){
-            out.tab(2).println("%s(json.getDouble(\"%s\")==null?null:BigDecimal.valueOf(json.getDouble(\"%s\")));", setter, javaMemberName, javaMemberName);
+            out.tab(2).println("%s(json.getDouble(\"%s\")==null?BigDecimal.ZERO:BigDecimal.valueOf(json.getDouble(\"%s\")));", setter, javaMemberName, javaMemberName);
             return true;
         }
         return super.handleCustomTypeFromJson(column, setter, columnType, javaMemberName, out);

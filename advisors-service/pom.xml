@@ -29,13 +29,16 @@
     </repositories>
 
     <profiles>
-    <profile>
-        <!-- build renamed to store passwords in global maven settings.xml -->
-        <id>advisors</id>
-        <activation>
-            <activeByDefault>true</activeByDefault>
-        </activation>
-    </profile>
+        <profile>
+            <!-- build renamed to store passwords in global maven settings.xml -->
+            <id>advisors</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+            </properties>
+        </profile>
+        
     </profiles>
 
     <dependencies>
@@ -269,7 +272,7 @@
                     <dependency>
                         <groupId>mysql</groupId>
                         <artifactId>mysql-connector-java</artifactId>
-                        <version>5.1.47</version>
+                        <version>5.1.45</version>
                     </dependency>
                     <dependency>
                         <groupId>io.github.jklingsporn</groupId>
@@ -289,9 +292,10 @@
                     <!-- JDBC connection parameters -->
                     <jdbc>
                         <driver>com.mysql.jdbc.Driver</driver>
-                        <url>jdbc:mysql://localhost:3306/bank</url>
-                        <user>root</user>
-                        <password>admin</password>
+                        
+                        <url>${db.url}</url>
+                        <user>${db.user}</user>
+                        <password>${db.password}</password>
                     </jdbc>
 
                     <!-- Generator parameters -->
@@ -302,8 +306,8 @@
                         <database>
                             <name>org.jooq.util.mysql.MySQLDatabase</name>
                             <includes>.*</includes>
-                            <inputSchema>bank</inputSchema>
-                            <outputSchema>bank</outputSchema>
+                            <inputSchema>${db.dbname}</inputSchema>
+                            <outputSchema>${db.dbname}</outputSchema>
                             <unsignedTypes>false</unsignedTypes>
                             <forcedTypes>
                                 <!-- Convert tinyint to boolean -->

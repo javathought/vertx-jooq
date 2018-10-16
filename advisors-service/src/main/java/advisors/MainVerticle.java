@@ -2,6 +2,7 @@ package advisors;
 
 import advisors.handlers.GetAdvisorsHandler;
 import advisors.handlers.GetHeartbeatHandler;
+import advisors.handlers.PostAccountJooqHandler;
 import advisors.handlers.PostAccountSqlHandler;
 import advisors.security.handlers.TokenSecurityHandler;
 import io.vertx.core.Context;
@@ -15,15 +16,11 @@ import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient;
 import io.vertx.reactivex.ext.asyncsql.MySQLClient;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
-import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
-import org.jooq.impl.DefaultConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -45,6 +42,7 @@ public class MainVerticle extends AbstractVerticle {
     private AsyncSQLClient mySQLClient;
     private DSLContext jooqContext;
     private Connection conn;
+    private JsonObject withSQLClientConfig;
 
     @Override
     public void init(Vertx vertx, Context context) {
@@ -53,13 +51,12 @@ public class MainVerticle extends AbstractVerticle {
         config().put("db_name", System.getenv("DB_NAME"));
 
 
-
-        JsonObject mySQLClientConfig = new JsonObject()
+        withSQLClientConfig = new JsonObject()
                 .put("host", "localhost")
                 .put("database", config().getString(DATABASE))
                 .put(USERNAME, config().getString(USERNAME))
                 .put(CRED_FIELD, config().getString(CRED_FIELD));
-        mySQLClient = MySQLClient.createNonShared(this.vertx, mySQLClientConfig);
+        mySQLClient = MySQLClient.createNonShared(this.vertx, withSQLClientConfig);
 
 
 
@@ -101,6 +98,7 @@ public class MainVerticle extends AbstractVerticle {
                     routerFactory.addHandlerByOperationId("getHeartbeat", new GetHeartbeatHandler());
                     routerFactory.addHandlerByOperationId("getAdvisors", new GetAdvisorsHandler(mySQLClient));
                     routerFactory.addHandlerByOperationId("postAccount", new PostAccountSqlHandler(jooqContext));
+                    routerFactory.addHandlerByOperationId("postAccounts", new PostAccountJooqHandler(MySQLClient.createShared(this.vertx, withSQLClientConfig)));
 
                     // Add security handlers
                     routerFactory.addSecurityHandler("Token", new TokenSecurityHandler());

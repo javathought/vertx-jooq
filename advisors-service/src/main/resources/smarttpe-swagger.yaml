@@ -32,7 +32,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Advisor'
-  /accounts:
+  /account:
     post:
 #      security:
 #        - Token: []
@@ -85,6 +85,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Invoice'
+  /accounts:
+    post:
+#      security:
+#        - Token: []
+      tags:
+        - Accounts
+      summary: create an account
+      operationId: postAccounts
+      responses:
+        default:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/Account'
+                  error:
+                    $ref: '#/components/schemas/Error'
+      x-contentType: application/json
+      x-accepts: application/json
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                invoice:
+                  $ref: '#/components/schemas/Account'
+                invoice_hash:
+                  type: string
 components:
   schemas:
     Advisor:
