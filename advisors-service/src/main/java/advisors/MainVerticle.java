@@ -1,13 +1,10 @@
 package advisors;
 
-import advisors.handlers.GetAdvisorsHandler;
-import advisors.handlers.GetHeartbeatHandler;
-import advisors.handlers.PostAccountJooqHandler;
-import advisors.handlers.PostAccountSqlHandler;
+import advisors.handlers.*;
 import advisors.security.handlers.TokenSecurityHandler;
-import io.vertx.core.Context;
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
+import advisors.services.reactivex.AccountsService;
+import advisors.services.ServicesVerticle;
+import io.vertx.core.*;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.AbstractVerticle;
@@ -16,6 +13,7 @@ import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient;
 import io.vertx.reactivex.ext.asyncsql.MySQLClient;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
+import io.vertx.serviceproxy.ServiceProxyBuilder;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
@@ -34,21 +32,22 @@ public class MainVerticle extends AbstractVerticle {
     // Configuration keys
     private static final String HTTP_PORT = "http.port";
     private static final String HTTP_SERVER = "http.server";
-    private static final String CRED_FIELD = "password";
-    private static final String USERNAME = "username";
+    public static final String CRED_FIELD = "password";
+    public static final String USERNAME = "username";
     private static final String DATABASE = "db_name";
-    private static final String DB_URL = "db_url";
+    public static final String DB_URL = "db_url";
     private HttpServer server;
     private AsyncSQLClient mySQLClient;
     private DSLContext jooqContext;
     private Connection conn;
     private JsonObject withSQLClientConfig;
+    private AccountsService withAccountsService;
 
     @Override
     public void init(Vertx vertx, Context context) {
         super.init(vertx, context);
         config().put("connection_string", System.getenv("DATABASE_URL"));
-        config().put("db_name", System.getenv("DB_NAME"));
+        config().put(DATABASE, System.getenv("DB_NAME"));
 
 
         withSQLClientConfig = new JsonObject()
@@ -59,8 +58,10 @@ public class MainVerticle extends AbstractVerticle {
         .put("autocommit", "false")
         ;
         mySQLClient = MySQLClient.createNonShared(this.vertx, withSQLClientConfig);
-        
 
+        withAccountsService = new AccountsService(new ServiceProxyBuilder(Vertx.currentContext().owner())
+                .setAddress(ServicesVerticle.ACCOUNTS_SERVICE_ADDRESS)
+                .build(advisors.services.AccountsService.class));
 
 
         String userName = config().getString(USERNAME);
@@ -89,6 +90,24 @@ public class MainVerticle extends AbstractVerticle {
         int port = config().getInteger(HTTP_PORT, DEFAULT_PORT);
         String hostListen = config().getString(HTTP_SERVER, DEFAULT_HOST);
 
+        /*
+         * Deploy services
+         */
+
+        vertx.deployVerticle(
+                "advisors.services.ServicesVerticle",
+                new DeploymentOptions().setWorker(true).setConfig(config()),
+                r -> {
+                    if (r.succeeded()) {
+                        LOG.info("child services started");
+                    } else {
+                        throw new VertxException("Unable to start services Verticle");
+                    }
+                }
+        );
+
+
+
         OpenAPI3RouterFactory.create(this.vertx, "/smarttpe-swagger.yaml", openAPI3RouterFactoryAsyncResult -> {
             if (openAPI3RouterFactoryAsyncResult.succeeded()) {
                 try {
@@ -101,7 +120,8 @@ public class MainVerticle extends AbstractVerticle {
                     routerFactory.addHandlerByOperationId("getHeartbeat", new GetHeartbeatHandler());
                     routerFactory.addHandlerByOperationId("getAdvisors", new GetAdvisorsHandler(mySQLClient));
                     routerFactory.addHandlerByOperationId("postAccount", new PostAccountSqlHandler(jooqContext));
-                    routerFactory.addHandlerByOperationId("postAccounts", new PostAccountJooqHandler(MySQLClient.createShared(this.vertx, withSQLClientConfig)));
+                    routerFactory.addHandlerByOperationId("postAccounts", new PostAccountJooqNoAutoCommitHandler(withAccountsService));
+                    routerFactory.addHandlerByOperationId("postManyAccounts", new PostManyAccounts(MySQLClient.createShared(this.vertx, withSQLClientConfig)));
 
                     // Add security handlers
                     routerFactory.addSecurityHandler("Token", new TokenSecurityHandler());

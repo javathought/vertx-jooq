@@ -84,7 +84,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Invoice'
+                $ref: '#/components/schemas/Account'
   /accounts:
     post:
 #      security:
@@ -111,11 +111,36 @@ paths:
         content:
           application/json:
             schema:
-              properties:
-                invoice:
-                  $ref: '#/components/schemas/Account'
-                invoice_hash:
-                  type: string
+              $ref: '#/components/schemas/Account'
+  /accounts/many:
+    post:
+#      security:
+#        - Token: []
+      tags:
+        - Accounts
+      summary: create an account
+      operationId: postManyAccounts
+      responses:
+        default:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payload:
+                    $ref: '#/components/schemas/Account'
+                  error:
+                    $ref: '#/components/schemas/Error'
+      x-contentType: application/json
+      x-accepts: application/json
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Account'
 components:
   schemas:
     Advisor:
