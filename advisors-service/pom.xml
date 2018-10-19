@@ -306,8 +306,8 @@
                         <database>
                             <name>org.jooq.util.mysql.MySQLDatabase</name>
                             <includes>.*</includes>
-                            <inputSchema>${db.dbname}</inputSchema>
-                            <outputSchema>${db.dbname}</outputSchema>
+                            <inputSchema>${db.name}</inputSchema>
+                            <outputSchema>${db.name}</outputSchema>
                             <unsignedTypes>false</unsignedTypes>
                             <forcedTypes>
                                 <!-- Convert tinyint to boolean -->

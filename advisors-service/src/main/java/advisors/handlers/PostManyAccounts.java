@@ -3,7 +3,7 @@ package advisors.handlers;
 import advisors.dao.tables.daos.AccountsDao;
 import advisors.dao.tables.pojos.Accounts;
 import io.vertx.core.Handler;
-import io.vertx.core.json.Json;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
@@ -11,8 +11,8 @@ import org.jooq.Configuration;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DefaultConfiguration;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PostManyAccounts implements Handler<RoutingContext> {
 
@@ -27,8 +27,9 @@ public class PostManyAccounts implements Handler<RoutingContext> {
 
     public void handle(RoutingContext routingContext) {
 
-        String json = routingContext.getBodyAsString();
-        List<Accounts> accounts = Arrays.asList(Json.decodeValue(json, Accounts[].class));
+        JsonArray arr = routingContext.getBodyAsJsonArray();
+        List<Accounts> accounts = arr.stream()
+                .map(j -> new Accounts((JsonObject)j)).collect(Collectors.toList());
 
         withDao
                 .insert(accounts)
@@ -37,7 +38,8 @@ public class PostManyAccounts implements Handler<RoutingContext> {
                                 .setStatusCode(201)
                                 .end(new JsonObject().put("items_created",integer).encodePrettily())
                 ).doOnError(throwable ->
-                routingContext.response().setStatusCode(500).end(new JsonObject().put("error3", throwable.getLocalizedMessage()).encodePrettily()))
+                routingContext.response().setStatusCode(500)
+                        .end(new JsonObject().put("error3", throwable.getLocalizedMessage()).encodePrettily()))
                 .subscribe();
 
     }
