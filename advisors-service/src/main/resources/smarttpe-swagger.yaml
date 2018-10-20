@@ -69,14 +69,14 @@ paths:
       tags:
         - Invoices
       summary: Retrieve a pending invoice by name. This resource requires a Seller Session-Token
-      operationId: getInvoice
-      parameters:
-        - name: name
-          in: query
-          required: true
-          description: The name of the invoice
-          schema:
-            type: string
+      operationId: getAccount
+#      parameters:
+#        - name: name
+#          in: query
+#          required: true
+#          description: The name of the invoice
+#          schema:
+#            type: string
       x-contentType: application/json
       responses:
         default:

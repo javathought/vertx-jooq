@@ -43,6 +43,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.github.javathought</groupId>
+            <artifactId>converters</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jdbc</artifactId>
             <version>8.5.4</version>
@@ -314,6 +319,10 @@
                                 <forcedType>
                                     <name>BOOLEAN</name>
                                     <types>(?i:TINYINT)</types>
+                                </forcedType>
+                                <forcedType>
+                                    <userType>java.math.BigDecimal</userType>
+                                    <types>DECIMAL</types>
                                 </forcedType>
                                 <!-- Convert varchar column with name 'someJsonObject' to a io.vertx.core.json.JsonObject-->
                                 <forcedType>

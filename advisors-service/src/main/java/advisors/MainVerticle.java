@@ -118,7 +118,7 @@ public class MainVerticle extends AbstractVerticle {
 
                     // Add routes handlers
                     routerFactory.addHandlerByOperationId("getHeartbeat", new GetHeartbeatHandler());
-                    routerFactory.addHandlerByOperationId("getAdvisors", new GetAdvisorsHandler(mySQLClient));
+                    routerFactory.addHandlerByOperationId("getAccount", new GetAccountsHandler(mySQLClient));
                     routerFactory.addHandlerByOperationId("postAccount", new PostAccountSqlHandler(jooqContext));
                     routerFactory.addHandlerByOperationId("postAccounts", new PostAccountJooqNoAutoCommitHandler(withAccountsService));
                     routerFactory.addHandlerByOperationId("postManyAccounts", new PostManyAccounts(MySQLClient.createShared(this.vertx, withSQLClientConfig)));
@@ -132,7 +132,7 @@ public class MainVerticle extends AbstractVerticle {
                     router.get("/swagger.yaml").handler(c -> c.response().rxSendFile(getClass().getResource("/smarttpe-swagger.yaml").getFile()).subscribe());
 
                     server = vertx.createHttpServer(new HttpServerOptions().setPort(port).setHost(hostListen));
-                    server.requestHandler(router::accept).rxListen().subscribe(s -> LOG.info("Server started and listening on adress '{}' and port {}", hostListen, port));
+                    server.requestHandler(router::accept).rxListen().subscribe(s -> LOG.info("Server started and listening on adress '{}' and port {}", hostListen, port)).dispose();
                     future.complete();
                 } catch (Exception e) {
                     future.fail(e);
