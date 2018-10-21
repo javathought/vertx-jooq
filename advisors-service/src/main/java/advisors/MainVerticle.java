@@ -2,17 +2,24 @@ package advisors;
 
 import advisors.handlers.*;
 import advisors.security.handlers.TokenSecurityHandler;
-import advisors.services.reactivex.AccountsService;
 import advisors.services.ServicesVerticle;
-import io.vertx.core.*;
+import advisors.services.reactivex.AccountsService;
+import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.vertx.core.Context;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
+import io.vertx.core.VertxException;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.micrometer.backends.BackendRegistries;
 import io.vertx.reactivex.core.AbstractVerticle;
+import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.http.HttpServer;
 import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient;
 import io.vertx.reactivex.ext.asyncsql.MySQLClient;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
+import io.vertx.reactivex.micrometer.MetricsService;
 import io.vertx.serviceproxy.ServiceProxyBuilder;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
@@ -44,7 +51,8 @@ public class MainVerticle extends AbstractVerticle {
     private AccountsService withAccountsService;
 
     @Override
-    public void init(Vertx vertx, Context context) {
+    public void init(io.vertx.core.Vertx vertx, Context context) {
+
         super.init(vertx, context);
         config().put("connection_string", System.getenv("DATABASE_URL"));
         config().put(DATABASE, System.getenv("DB_NAME"));
@@ -59,7 +67,7 @@ public class MainVerticle extends AbstractVerticle {
         ;
         mySQLClient = MySQLClient.createNonShared(this.vertx, withSQLClientConfig);
 
-        withAccountsService = new AccountsService(new ServiceProxyBuilder(Vertx.currentContext().owner())
+        withAccountsService = new AccountsService(new ServiceProxyBuilder(Vertx.currentContext().owner().getDelegate())
                 .setAddress(ServicesVerticle.ACCOUNTS_SERVICE_ADDRESS)
                 .build(advisors.services.AccountsService.class));
 
@@ -131,8 +139,22 @@ public class MainVerticle extends AbstractVerticle {
 
                     router.get("/swagger.yaml").handler(c -> c.response().rxSendFile(getClass().getResource("/smarttpe-swagger.yaml").getFile()).subscribe());
 
+                    router.route("/metrics").handler(routingContext -> {
+                        PrometheusMeterRegistry prometheusRegistry = (PrometheusMeterRegistry) BackendRegistries.getDefaultNow();
+
+                        if (prometheusRegistry != null) {
+                            String response = prometheusRegistry.scrape();
+                            routingContext.response().end(response);
+                        } else {
+                            routingContext.fail(500);
+                        }
+                    });
+
                     server = vertx.createHttpServer(new HttpServerOptions().setPort(port).setHost(hostListen));
                     server.requestHandler(router::accept).rxListen().subscribe(s -> LOG.info("Server started and listening on adress '{}' and port {}", hostListen, port)).dispose();
+                    MetricsService.create(vertx);
+                    MetricsService.create(server);
+                    MetricsService.create(vertx.eventBus());
                     future.complete();
                 } catch (Exception e) {
                     future.fail(e);
