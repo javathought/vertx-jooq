@@ -47,8 +47,7 @@ public class MainVerticle extends AbstractVerticle {
     private AsyncSQLClient mySQLClient;
     private DSLContext jooqContext;
     private Connection conn;
-    private JsonObject withSQLClientConfig;
-    private AccountsService withAccountsService;
+    private AccountsService accountsService;
 
     @Override
     public void init(io.vertx.core.Vertx vertx, Context context) {
@@ -58,16 +57,15 @@ public class MainVerticle extends AbstractVerticle {
         config().put(DATABASE, System.getenv("DB_NAME"));
 
 
-        withSQLClientConfig = new JsonObject()
+        JsonObject withSQLClientConfig = new JsonObject()
                 .put("host", "localhost")
                 .put("database", config().getString(DATABASE))
                 .put(USERNAME, config().getString(USERNAME))
                 .put(CRED_FIELD, config().getString(CRED_FIELD))
-        .put("autocommit", "false")
-        ;
-        mySQLClient = MySQLClient.createNonShared(this.vertx, withSQLClientConfig);
+                .put("autocommit", "false");
+        mySQLClient = MySQLClient.createShared(this.vertx, withSQLClientConfig);
 
-        withAccountsService = new AccountsService(new ServiceProxyBuilder(Vertx.currentContext().owner().getDelegate())
+        accountsService = new AccountsService(new ServiceProxyBuilder(Vertx.currentContext().owner().getDelegate())
                 .setAddress(ServicesVerticle.ACCOUNTS_SERVICE_ADDRESS)
                 .build(advisors.services.AccountsService.class));
 
@@ -97,7 +95,80 @@ public class MainVerticle extends AbstractVerticle {
 
         int port = config().getInteger(HTTP_PORT, DEFAULT_PORT);
         String hostListen = config().getString(HTTP_SERVER, DEFAULT_HOST);
+        deployServices();
 
+
+        OpenAPI3RouterFactory.create(this.vertx, "/smarttpe-swagger.yaml", openAPI3RouterFactoryAsyncResult -> {
+            if (openAPI3RouterFactoryAsyncResult.succeeded()) {
+                try {
+                    OpenAPI3RouterFactory routerFactory = openAPI3RouterFactoryAsyncResult.result();
+
+                    // Enable automatic response when ValidationException is thrown
+                    routerFactory.enableValidationFailureHandler(true);
+
+                    // Add routes handlers
+                    addBusinessRoutesHandlers(routerFactory);
+
+                    // Add security handlers
+                    routerFactory.addSecurityHandler("Token", new TokenSecurityHandler());
+
+                    // Generate the router
+                    Router router = routerFactory.getRouter();
+                    router.get("/swagger.yaml")
+                            .handler(c -> c.response()
+                                    .rxSendFile(getClass().getResource("/smarttpe-swagger.yaml").getFile())
+                                    .subscribe());
+
+                    setupMetrics(router);
+
+                    server = vertx.createHttpServer(new HttpServerOptions().setPort(port).setHost(hostListen));
+                    server.requestHandler(router::accept).rxListen()
+                            .subscribe(s -> LOG.info("Server started and listening on adress '{}' and port {}",
+                                    hostListen, port))
+                            .dispose();
+                    future.complete();
+                } catch (Exception e) {
+                    future.fail(e);
+                }
+            } else {
+                // Something went wrong during router factory initialization
+                Throwable exception = openAPI3RouterFactoryAsyncResult.cause();
+                future.fail(exception);
+            }
+        });
+    }
+
+    private void addBusinessRoutesHandlers(OpenAPI3RouterFactory routerFactory) {
+        routerFactory.addHandlerByOperationId("getHeartbeat",
+                new GetHeartbeatHandler());
+        // vertx-jooq
+        routerFactory.addHandlerByOperationId("getAccount", new GetAccountsHandler(mySQLClient));
+        // native jooq with transaction
+        routerFactory.addHandlerByOperationId("postAccount", new PostAccountSqlHandler(jooqContext));
+        // native jooq with transaction over eventBus
+        routerFactory.addHandlerByOperationId("postAccounts", new PostAccountOnEBHandler(accountsService));
+        // vertx-jooq, insert with array
+        routerFactory.addHandlerByOperationId("postManyAccounts", new PostManyAccounts(mySQLClient));
+    }
+
+    private void setupMetrics(Router router) {
+        router.route("/metrics").handler(routingContext -> {
+            PrometheusMeterRegistry prometheusRegistry = (PrometheusMeterRegistry) BackendRegistries.getDefaultNow();
+
+            if (prometheusRegistry != null) {
+                String response = prometheusRegistry.scrape();
+                routingContext.response().end(response);
+            } else {
+                routingContext.fail(500);
+            }
+        });
+        MetricsService.create(vertx);
+        MetricsService.create(server);
+        MetricsService.create(vertx.eventBus());
+
+    }
+
+    private void deployServices() {
         /*
          * Deploy services
          */
@@ -113,58 +184,6 @@ public class MainVerticle extends AbstractVerticle {
                     }
                 }
         );
-
-
-
-        OpenAPI3RouterFactory.create(this.vertx, "/smarttpe-swagger.yaml", openAPI3RouterFactoryAsyncResult -> {
-            if (openAPI3RouterFactoryAsyncResult.succeeded()) {
-                try {
-                    OpenAPI3RouterFactory routerFactory = openAPI3RouterFactoryAsyncResult.result();
-
-                    // Enable automatic response when ValidationException is thrown
-                    routerFactory.enableValidationFailureHandler(true);
-
-                    // Add routes handlers
-                    routerFactory.addHandlerByOperationId("getHeartbeat", new GetHeartbeatHandler());
-                    routerFactory.addHandlerByOperationId("getAccount", new GetAccountsHandler(mySQLClient));
-                    routerFactory.addHandlerByOperationId("postAccount", new PostAccountSqlHandler(jooqContext));
-                    routerFactory.addHandlerByOperationId("postAccounts", new PostAccountJooqNoAutoCommitHandler(withAccountsService));
-                    routerFactory.addHandlerByOperationId("postManyAccounts", new PostManyAccounts(MySQLClient.createShared(this.vertx, withSQLClientConfig)));
-
-                    // Add security handlers
-                    routerFactory.addSecurityHandler("Token", new TokenSecurityHandler());
-
-                    // Generate the router
-                    Router router = routerFactory.getRouter();
-
-                    router.get("/swagger.yaml").handler(c -> c.response().rxSendFile(getClass().getResource("/smarttpe-swagger.yaml").getFile()).subscribe());
-
-                    router.route("/metrics").handler(routingContext -> {
-                        PrometheusMeterRegistry prometheusRegistry = (PrometheusMeterRegistry) BackendRegistries.getDefaultNow();
-
-                        if (prometheusRegistry != null) {
-                            String response = prometheusRegistry.scrape();
-                            routingContext.response().end(response);
-                        } else {
-                            routingContext.fail(500);
-                        }
-                    });
-
-                    server = vertx.createHttpServer(new HttpServerOptions().setPort(port).setHost(hostListen));
-                    server.requestHandler(router::accept).rxListen().subscribe(s -> LOG.info("Server started and listening on adress '{}' and port {}", hostListen, port)).dispose();
-                    MetricsService.create(vertx);
-                    MetricsService.create(server);
-                    MetricsService.create(vertx.eventBus());
-                    future.complete();
-                } catch (Exception e) {
-                    future.fail(e);
-                }
-            } else {
-                // Something went wrong during router factory initialization
-                Throwable exception = openAPI3RouterFactoryAsyncResult.cause();
-                future.fail(exception);
-            }
-        });
     }
 
     @Override
