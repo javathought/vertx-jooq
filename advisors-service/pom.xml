@@ -142,7 +142,6 @@
             <artifactId>vertx-service-proxy</artifactId>
             <version>${vertx.version}</version>
         </dependency>
-<!--
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-codegen</artifactId>
@@ -150,21 +149,11 @@
             <version>${vertx.version}</version>
             <scope>provided</scope>
         </dependency>
--->
-<!--
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct-processor</artifactId>
-            <classifier>processor</classifier>
             <version>${org.mapstruct.version}</version>
             <scope>provided</scope>
-        </dependency>
--->
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-mongo-client</artifactId>
-            <version>${vertx.version}</version>
-            <!--<version>3.5.4</version>-->
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -247,24 +236,21 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.5.1</version>
                 <configuration>
+                    <generatedSourcesDirectory>${project.build.directory}/generated-sources</generatedSourcesDirectory>
                     <annotationProcessors>
                         <annotationProcessor>io.vertx.codegen.CodeGenProcessor</annotationProcessor>
-                        <processor>org.mapstruct.ap.MappingProcessor</processor>
+                        <annotationProcessor>org.mapstruct.ap.MappingProcessor</annotationProcessor>
                     </annotationProcessors>
-
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>io.vertx</groupId>
-                            <artifactId>vertx-codegen</artifactId>
-                            <version>${vertx.version}</version>
-                        </path>
-                        <path>
-                            <groupId>org.mapstruct</groupId>
-                            <artifactId>mapstruct-processor</artifactId>
-                            <version>${org.mapstruct.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
                 </configuration>
+                <executions>
+                <execution>
+                    <id>compile</id>
+                    <phase>compile</phase>
+                    <goals>
+                        <goal>compile</goal>
+                    </goals>
+                </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -412,5 +398,5 @@
             </plugin>
         </plugins>
     </build>
-
+    
 </project>
