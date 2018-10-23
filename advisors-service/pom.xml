@@ -17,6 +17,7 @@
         <project.key>capsts</project.key>
         <main.verticle>org.hackathon.packapp.containerbank.rest.advisors.MainVerticle</main.verticle>
         <vertx.version>3.5.4</vertx.version>
+        <org.mapstruct.version>1.2.0.Final</org.mapstruct.version>
     </properties>
 
     <repositories>
@@ -42,6 +43,29 @@
     </profiles>
 
     <dependencies>
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-jdk8</artifactId> <!-- use mapstruct-jdk8 for Java 8 or higher -->
+            <version>${org.mapstruct.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.11.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-java8</artifactId>
+            <version>4.0.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit</artifactId>
+            <version>4.0.1</version>
+            <scope>test</scope>
+        </dependency>
         <!-- Metrics -->
         <dependency>
             <groupId>io.vertx</groupId>
@@ -118,6 +142,7 @@
             <artifactId>vertx-service-proxy</artifactId>
             <version>${vertx.version}</version>
         </dependency>
+<!--
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-codegen</artifactId>
@@ -125,6 +150,16 @@
             <version>${vertx.version}</version>
             <scope>provided</scope>
         </dependency>
+-->
+<!--
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-processor</artifactId>
+            <classifier>processor</classifier>
+            <version>${org.mapstruct.version}</version>
+            <scope>provided</scope>
+        </dependency>
+-->
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-mongo-client</artifactId>
@@ -164,12 +199,6 @@
             <version>${vertx.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>3.6.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-hazelcast</artifactId>
             <version>${vertx.version}</version>
@@ -204,7 +233,7 @@
                 </plugin>
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.1</version>
+                    <version>3.5.1</version>
                     <configuration>
                         <source>1.8</source>
                         <target>1.8</target>
@@ -216,10 +245,25 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.5.1</version>
                 <configuration>
                     <annotationProcessors>
                         <annotationProcessor>io.vertx.codegen.CodeGenProcessor</annotationProcessor>
+                        <processor>org.mapstruct.ap.MappingProcessor</processor>
                     </annotationProcessors>
+
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>io.vertx</groupId>
+                            <artifactId>vertx-codegen</artifactId>
+                            <version>${vertx.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${org.mapstruct.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
             </plugin>
             <plugin>

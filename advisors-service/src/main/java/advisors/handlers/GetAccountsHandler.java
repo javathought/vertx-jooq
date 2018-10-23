@@ -1,41 +1,36 @@
 package advisors.handlers;
 
-import advisors.dao.tables.daos.AccountsDao;
-import advisors.dao.tables.interfaces.IAccounts;
+import advisors.domain.Account;
+import advisors.domain.ports.primary.AccountManager;
+import advisors.infra.mapping.AccountJsonMapper;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.ext.asyncsql.AsyncSQLClient;
 import io.vertx.reactivex.ext.web.RoutingContext;
-import org.jooq.Configuration;
-import org.jooq.SQLDialect;
-import org.jooq.impl.DefaultConfiguration;
 
 import java.util.stream.Collectors;
 
 public class GetAccountsHandler implements Handler<RoutingContext> {
 
-    private final AsyncSQLClient mySqlClient;
-    private final AccountsDao withDao;
 
-    public GetAccountsHandler(AsyncSQLClient sqlClient) {
-        this.mySqlClient = sqlClient;
-        Configuration configuration = new DefaultConfiguration();
-        configuration.set(SQLDialect.MYSQL);
+    private final AccountManager accountMgr;
 
-        withDao = new AccountsDao(configuration, mySqlClient);
-
+    public GetAccountsHandler(AccountManager accountMgr) {
+        this.accountMgr = accountMgr;
     }
 
     public void handle(RoutingContext routingContext) {
 
-        withDao.findAll()
+        accountMgr.getAll()
                 .doOnSuccess(accounts ->
-                        routingContext.response().end(
-                                new JsonArray(
-                                        accounts.stream().map(IAccounts::toJson).collect(Collectors.toList())
-                                ).encodePrettily()
-                        )
+                        {
+                            System.out.println(String.format("accounts = ", accounts));
+                            routingContext.response().end(
+                                    new JsonArray(
+                                            accounts.stream().map(AccountJsonMapper::toJson).collect(Collectors.toList())
+                                    ).encodePrettily()
+                            );
+                        }
                 )
                 .doOnError(throwable ->
                         routingContext.response().setStatusCode(500)

@@ -1,6 +1,10 @@
 package advisors;
 
+import advisors.dao.tables.daos.AccountsDao;
+import advisors.domain.ports.primary.AccountManager;
+import advisors.domain.ports.secondary.AccountRepository;
 import advisors.handlers.*;
+import advisors.infra.ports.secondary.AccountRepositoryImpl;
 import advisors.security.handlers.TokenSecurityHandler;
 import advisors.services.ServicesVerticle;
 import advisors.services.reactivex.AccountsService;
@@ -21,9 +25,11 @@ import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 import io.vertx.reactivex.micrometer.MetricsService;
 import io.vertx.serviceproxy.ServiceProxyBuilder;
+import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.jooq.impl.DefaultConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +55,7 @@ public class MainVerticle extends AbstractVerticle {
     private Connection conn;
     private JsonObject withSQLClientConfig;
     private AccountsService withAccountsService;
+    private AccountManager accountMgr;
 
     @Override
     public void init(io.vertx.core.Vertx vertx, Context context) {
@@ -66,6 +73,8 @@ public class MainVerticle extends AbstractVerticle {
         .put("autocommit", "false")
         ;
         mySQLClient = MySQLClient.createNonShared(this.vertx, withSQLClientConfig);
+
+        accountMgr = new AccountManager(getDao(mySQLClient));
 
         withAccountsService = new AccountsService(new ServiceProxyBuilder(Vertx.currentContext().owner().getDelegate())
                 .setAddress(ServicesVerticle.ACCOUNTS_SERVICE_ADDRESS)
@@ -126,7 +135,7 @@ public class MainVerticle extends AbstractVerticle {
 
                     // Add routes handlers
                     routerFactory.addHandlerByOperationId("getHeartbeat", new GetHeartbeatHandler());
-                    routerFactory.addHandlerByOperationId("getAccount", new GetAccountsHandler(mySQLClient));
+                    routerFactory.addHandlerByOperationId("getAccount", new GetAccountsHandler(accountMgr));
                     routerFactory.addHandlerByOperationId("postAccount", new PostAccountSqlHandler(jooqContext));
                     routerFactory.addHandlerByOperationId("postAccounts", new PostAccountJooqNoAutoCommitHandler(withAccountsService));
                     routerFactory.addHandlerByOperationId("postManyAccounts", new PostManyAccounts(MySQLClient.createShared(this.vertx, withSQLClientConfig)));
@@ -165,6 +174,12 @@ public class MainVerticle extends AbstractVerticle {
                 future.fail(exception);
             }
         });
+    }
+
+
+    private AccountRepository getDao(AsyncSQLClient sqlClient) {
+        return new AccountRepositoryImpl(sqlClient);
+
     }
 
     @Override
