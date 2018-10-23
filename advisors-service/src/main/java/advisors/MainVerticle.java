@@ -1,6 +1,5 @@
 package advisors;
 
-import advisors.dao.tables.daos.AccountsDao;
 import advisors.domain.ports.primary.AccountManager;
 import advisors.domain.ports.secondary.AccountRepository;
 import advisors.handlers.*;
@@ -25,11 +24,9 @@ import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.api.contract.openapi3.OpenAPI3RouterFactory;
 import io.vertx.reactivex.micrometer.MetricsService;
 import io.vertx.serviceproxy.ServiceProxyBuilder;
-import org.jooq.Configuration;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
-import org.jooq.impl.DefaultConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +47,6 @@ public class MainVerticle extends AbstractVerticle {
     private static final String DATABASE = "db_name";
     public static final String DB_URL = "db_url";
     private HttpServer server;
-    private AsyncSQLClient mySQLClient;
     private DSLContext jooqContext;
     private Connection conn;
     private JsonObject withSQLClientConfig;
@@ -72,7 +68,7 @@ public class MainVerticle extends AbstractVerticle {
                 .put(CRED_FIELD, config().getString(CRED_FIELD))
         .put("autocommit", "false")
         ;
-        mySQLClient = MySQLClient.createNonShared(this.vertx, withSQLClientConfig);
+        AsyncSQLClient mySQLClient = MySQLClient.createNonShared(this.vertx, withSQLClientConfig);
 
         accountMgr = new AccountManager(getDao(mySQLClient));
 

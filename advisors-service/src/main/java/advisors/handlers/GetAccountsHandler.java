@@ -1,6 +1,5 @@
 package advisors.handlers;
 
-import advisors.domain.Account;
 import advisors.domain.ports.primary.AccountManager;
 import advisors.infra.mapping.AccountJsonMapper;
 import io.vertx.core.Handler;
@@ -12,7 +11,6 @@ import java.util.stream.Collectors;
 
 public class GetAccountsHandler implements Handler<RoutingContext> {
 
-
     private final AccountManager accountMgr;
 
     public GetAccountsHandler(AccountManager accountMgr) {
@@ -23,14 +21,12 @@ public class GetAccountsHandler implements Handler<RoutingContext> {
 
         accountMgr.getAll()
                 .doOnSuccess(accounts ->
-                        {
-                            System.out.println(String.format("accounts = ", accounts));
                             routingContext.response().end(
                                     new JsonArray(
                                             accounts.stream().map(AccountJsonMapper::toJson).collect(Collectors.toList())
                                     ).encodePrettily()
-                            );
-                        }
+                            )
+                        
                 )
                 .doOnError(throwable ->
                         routingContext.response().setStatusCode(500)
