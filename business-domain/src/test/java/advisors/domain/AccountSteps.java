@@ -28,7 +28,7 @@ public class AccountSteps implements En {
             // Write code here that turns the phrase above into concrete actions
             currentAccount = mgr.create(actNumber).blockingGet()
         );
-        And("le solde du compte {string} est {bigDecimal}", (String actNumber, BigDecimal balance) -> {
+        And("le solde du compte {string} est {bigdecimal}", (String actNumber, BigDecimal balance) -> {
             // Write code here that turns the phrase above into concrete actions
             currentAccount = mgr.findById(actNumber).blockingGet();
             assertThat(currentAccount.getBalance()).isEqualTo(balance);
