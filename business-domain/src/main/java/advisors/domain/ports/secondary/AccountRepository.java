@@ -7,4 +7,10 @@ import java.util.List;
 
 public interface AccountRepository {
     Single<List<Account>> findAll();
+
+    Single<Boolean> exists(String actNumber);
+
+    Single<Account> insert(Account account);
+
+    Single<Account> findById(String actNumber);
 }

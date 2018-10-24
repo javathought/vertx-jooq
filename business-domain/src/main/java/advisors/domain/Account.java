@@ -1,6 +1,5 @@
 package advisors.domain;
 
-import io.swagger.util.Json;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -13,11 +12,12 @@ public class Account {
     private BigDecimal balance;
 
     public Account() {
+        // For MapStruct
     }
 
-    public Account(String accountNumber, BigDecimal balance) {
+    public Account(String accountNumber) {
         this.accountNumber = accountNumber;
-        this.balance = balance;
+        this.balance = BigDecimal.ZERO.setScale(1);
     }
 
     public String getAccountNumber() {
@@ -58,7 +58,6 @@ public class Account {
                 .toHashCode();
     }
 
-/*
     @Override
     public String toString() {
         return new ToStringBuilder(this)
@@ -66,6 +65,5 @@ public class Account {
                 .append("balance", balance)
                 .toString();
     }
-*/
 
 }

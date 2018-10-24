@@ -44,27 +44,14 @@
 
     <dependencies>
         <dependency>
+            <groupId>io.github.javathought</groupId>
+            <artifactId>business-domain</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct-jdk8</artifactId> <!-- use mapstruct-jdk8 for Java 8 or higher -->
             <version>${org.mapstruct.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>3.11.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-java8</artifactId>
-            <version>4.0.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-junit</artifactId>
-            <version>4.0.1</version>
-            <scope>test</scope>
         </dependency>
         <!-- Metrics -->
         <dependency>
@@ -154,11 +141,6 @@
             <artifactId>mapstruct-processor</artifactId>
             <version>${org.mapstruct.version}</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.6</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
@@ -304,6 +286,7 @@
                 <!-- The plugin should hook into the generate goal -->
                 <executions>
                     <execution>
+                        <phase>generate-sources</phase>
                         <goals>
                             <goal>generate</goal>
                         </goals>
@@ -398,5 +381,5 @@
             </plugin>
         </plugins>
     </build>
-    
+
 </project>

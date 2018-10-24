@@ -45,8 +45,8 @@ public class ApiClient {
      * Call getHeartbeat with empty body. 
      * @param handler The handler for the asynchronous request
      */
-    public void getHeartbeat(
-        Handler<AsyncResult<HttpResponse>> handler) {
+    void getHeartbeat(
+            Handler<AsyncResult<HttpResponse>> handler) {
         // Check required params
         
 
@@ -240,7 +240,7 @@ public class ApiClient {
         HttpRequest request = client.put(uri);
 
         MultiMap requestCookies = MultiMap.caseInsensitiveMultiMap();
-        if (csrf != null) this.addQueryParam("csrf", csrf, request);
+        this.addQueryParam("csrf", csrf, request);
         this.attachTokenSecurity(request, requestCookies);
         
 
@@ -273,7 +273,7 @@ public class ApiClient {
         HttpRequest request = client.put(uri);
 
         MultiMap requestCookies = MultiMap.caseInsensitiveMultiMap();
-        if (csrf != null) this.addQueryParam("csrf", csrf, request);
+        this.addQueryParam("csrf", csrf, request);
         this.addHeaderParam("Content-Type", "application/json", request);
         this.attachTokenSecurity(request, requestCookies);
         
@@ -454,7 +454,7 @@ public class ApiClient {
         map.add(paramName, String.valueOf(value));
     }
 
-    /**
+    /*
      * Following this table to implement parameters serialization
      *
      +----------------+---------+---------------+-------------------------------------+----------------------------------------+
@@ -572,7 +572,7 @@ public class ApiClient {
      * @return
      */
     private String renderPathLabel(String paramName, Object value) {
-        return "." + String.valueOf(value);
+        return "" + String.valueOf(value);
     }
 
     /**
@@ -587,7 +587,7 @@ public class ApiClient {
      * @return
      */
     private String renderPathArrayLabel(String paramName, List<Object> values) {
-        return "." + String.join(".", values.stream().map(object -> encode(String.valueOf(object))).collect(Collectors.toList()));
+        return "" + String.join(".", values.stream().map(object -> encode(String.valueOf(object))).collect(Collectors.toList()));
     }
 
     /**
@@ -607,7 +607,7 @@ public class ApiClient {
             listToSerialize.add(entry.getKey());
             listToSerialize.add(encode(String.valueOf(entry.getValue())));
         }
-        return "." + String.join(".", listToSerialize);
+        return "" + String.join(".", listToSerialize);
     }
 
     /**
@@ -639,7 +639,7 @@ public class ApiClient {
     private String renderPathObjectLabelExplode(String paramName, Map<String, Object> values) {
         String result = "";
         for (Map.Entry<String, Object> value : values.entrySet())
-            result = result.concat("." + value.getKey() + "=" + encode(String.valueOf(value.getValue())));
+            result = result.concat("" + value.getKey() + "=" + encode(String.valueOf(value.getValue())));
         return result;
     }
 
@@ -997,7 +997,7 @@ public class ApiClient {
      * @param request
      */
     private void addQueryArrayPipeDelimited(String paramName, List<Object> values, HttpRequest request) {
-        String serialized = String.join("|", values.stream().map(object -> String.valueOf(object)).collect(Collectors.toList()));
+        String serialized = String.join("|", values.stream().map(String::valueOf).collect(Collectors.toList()));
         this.addQueryParam(paramName, serialized, request); // Encoding is done by WebClient
     }
 

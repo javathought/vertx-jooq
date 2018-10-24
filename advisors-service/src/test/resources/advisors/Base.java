@@ -7,8 +7,8 @@ import io.vertx.ext.unit.TestContext;
 
 public class Base {
 
-    Vertx vertx;
-    String deploymentId;
+    private Vertx vertx;
+    private String deploymentId;
     ApiClient apiClient;
 
     public void before(TestContext context) {
